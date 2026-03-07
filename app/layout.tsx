@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Bebas_Neue, DM_Mono, Source_Serif_4 } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@vercel/analytics/next";
 import ConvexClientProvider from "./ConvexClientProvider";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 import "./globals.css";
@@ -44,6 +45,7 @@ export default function RootLayout({
           className={`${bricolage.variable} ${bebas.variable} ${dmMono.variable} ${sourceSerif.variable} antialiased bg-white`}
         >
           <ConvexClientProvider>{children}</ConvexClientProvider>
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>
