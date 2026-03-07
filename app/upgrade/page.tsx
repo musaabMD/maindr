@@ -5,8 +5,8 @@ import { PricingTable } from "@clerk/nextjs";
 
 export default function UpgradePage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0e0e10] transition-colors duration-300">
-      <header className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white dark:bg-[#0e0e10] border-b border-black/8 dark:border-white/8">
+    <div className="min-h-screen bg-[#F8F8F7] dark:bg-[#0e0e10] transition-colors duration-300">
+      <header className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-[#F8F8F7] dark:bg-[#0e0e10] border-b border-black/8 dark:border-white/8">
         <Link
           href="/"
           className="flex items-baseline gap-2 text-black dark:text-white hover:opacity-80 transition-opacity"

@@ -204,11 +204,26 @@ A log of past AI-assisted development sessions for the DrNote project.
 
 ---
 
+## 16. Google OAuth + Clerk Setup
+**Chat ID:** (current session)
+
+**Request:** Connect Google auth with Clerk and the app; document the full setup.
+
+**Actions:**
+- Configured Google Cloud Console (drnotev2): OAuth client ID (Web application)
+- Authorized redirect URI: `https://clerk.drnote.co/v1/oauth_callback`
+- Authorized JavaScript origins: `https://drnote.co`, `https://www.drnote.co`, `http://localhost:3000`
+- Added Client ID and Client Secret to Clerk Dashboard → SSO connections → Google
+- Created `docs/GOOGLE_OAUTH_CLERK_SETUP.md` with full setup guide
+
+---
+
 ## Summary: Key Files & Integrations
 
 | Area | Files / Services |
 |------|------------------|
-| **Auth** | Clerk (`@clerk/nextjs`), `middleware.ts`, `lib/clerk-appearance.ts` |
+| **Auth** | Clerk (`@clerk/nextjs`), Google OAuth, `middleware.ts`, `lib/clerk-appearance.ts` |
+| **Auth Docs** | `docs/GOOGLE_OAUTH_CLERK_SETUP.md` |
 | **Database** | Convex (`blessed-fish-200`), `convex/schema.ts`, `convex/exams.ts`, `convex/users.ts`, `convex/suggestedExams.ts` |
 | **Exams** | `components/exams/browse-page.tsx`, `exam-card.tsx`, `suggest-exam-form.tsx` |
 | **Upgrade** | `/upgrade` with Clerk PricingTable |

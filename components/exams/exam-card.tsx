@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { TiltedArt } from "./tilted-art";
 
@@ -11,10 +12,14 @@ interface ExamCardProps {
 export function ExamCard({ exam }: ExamCardProps) {
   const [hov, setHov] = useState(false);
   return (
-    <div
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      className="relative flex flex-col justify-between overflow-hidden rounded-xl p-5 transition-all duration-200"
+    <Link
+      href={`/exams/${exam.slug}`}
+      className="block"
+    >
+      <div
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        className="relative flex flex-col justify-between overflow-hidden rounded-xl p-5 transition-all duration-200"
       style={{
         aspectRatio: "2/1",
         minHeight: "180px",
@@ -37,5 +42,6 @@ export function ExamCard({ exam }: ExamCardProps) {
       </div>
       <TiltedArt name={exam.name} />
     </div>
+    </Link>
   );
 }

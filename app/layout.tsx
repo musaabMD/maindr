@@ -42,7 +42,7 @@ export default function RootLayout({
     <ClerkProvider appearance={clerkAppearance}>
       <html lang="en">
         <body
-          className={`${bricolage.variable} ${bebas.variable} ${dmMono.variable} ${sourceSerif.variable} antialiased bg-white`}
+          className={`${bricolage.variable} ${bebas.variable} ${dmMono.variable} ${sourceSerif.variable} antialiased bg-[#F8F8F7]`}
         >
           <ConvexClientProvider>{children}</ConvexClientProvider>
           <Analytics />

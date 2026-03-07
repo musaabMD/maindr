@@ -62,7 +62,7 @@ export function SuggestExamForm({ open, onClose, dark }: SuggestExamFormProps) {
       <div
         className="relative w-full max-w-md rounded-xl p-6 shadow-xl"
         style={{
-          background: dark ? "#1a1a1e" : "#ffffff",
+          background: dark ? "#1a1a1e" : "#F8F8F7",
           color: t.text,
           border: `1px solid ${t.border}`,
           fontFamily: "var(--font-bricolage)",

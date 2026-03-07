@@ -6,7 +6,7 @@ const EXAMS = [
     name: "SMLE",
     slug: "smle",
     questions: 200,
-    color: "#006450",
+    color: "#3f3f46",
     subjects: ["Medicine", "Clinical Sciences", "Basic Sciences"],
     tags: ["medical", "licensing"],
     description:
@@ -58,7 +58,7 @@ const EXAMS = [
     name: "Family Medicine",
     slug: "family-medicine",
     questions: 250,
-    color: "#3d6b21",
+    color: "#0d9488",
     subjects: ["Family Medicine", "Primary Care", "Preventive Medicine"],
     tags: ["medical", "family medicine", "specialty"],
     description:
