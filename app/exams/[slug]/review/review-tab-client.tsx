@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ExamTabHeader } from "@/components/exams/exam-tab-header";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardHeader } from "@/components/ui/card";
+import { ExamTabToolbar } from "@/components/exams/exam-tab-toolbar";
+import { Bot, Send, X, HelpCircle, MessageSquare } from "lucide-react";
 
 type ReviewQuestion = {
   id: number;
@@ -12,6 +11,7 @@ type ReviewQuestion = {
   question: string;
   options: string[];
   correctIndex: number;
+  userIndex: number; // index of user's selected answer (for correct/incorrect highlighting)
   status: "correct" | "incorrect";
   flagged: boolean;
   explanation?: string;
@@ -25,6 +25,7 @@ const reviewData: ReviewQuestion[] = [
       "In type I buildings, structural components such as walls, ceilings, and floors must be constructed from materials capable of withstanding excessive heat and flames. Regarding exterior bearing walls that support more than one floor, what is the minimum fire resistance rating required?",
     options: ["1 hour", "2 hours", "3-4 hours", "4 hours"],
     correctIndex: 2,
+    userIndex: 0,
     status: "incorrect",
     flagged: false,
     explanation:
@@ -37,6 +38,7 @@ const reviewData: ReviewQuestion[] = [
       "The use of Air-purifying Respirators (APRs) at hazardous materials incidents is approved by NIOSH. Which of the following is not one of the three types of canisters that can be used with an APR at a hazardous material response?",
     options: ["Acid gas", "Organic vapor", "Particulate filter", "Ammonia/methylamine"],
     correctIndex: 2,
+    userIndex: 1,
     status: "incorrect",
     flagged: false,
     explanation:
@@ -49,6 +51,7 @@ const reviewData: ReviewQuestion[] = [
       "What classification of building construction uses non-combustible or limited combustible materials for structural elements but does not require fire resistance ratings?",
     options: ["Type I", "Type II", "Type III", "Type IV"],
     correctIndex: 1,
+    userIndex: 1,
     status: "correct",
     flagged: false,
     explanation:
@@ -61,6 +64,7 @@ const reviewData: ReviewQuestion[] = [
       "According to the ERG, what is the recommended initial isolation distance for a large spill of a flammable liquid during daytime conditions?",
     options: ["30 meters", "50 meters", "100 meters", "300 meters"],
     correctIndex: 2,
+    userIndex: 3,
     status: "incorrect",
     flagged: false,
     explanation:
@@ -73,6 +77,7 @@ const reviewData: ReviewQuestion[] = [
       "Which phase of fire development is characterized by a sudden transition to full room involvement due to radiant heat feedback?",
     options: ["Growth", "Flashover", "Fully developed", "Decay"],
     correctIndex: 1,
+    userIndex: 1,
     status: "correct",
     flagged: false,
     explanation:
@@ -85,6 +90,7 @@ const reviewData: ReviewQuestion[] = [
       "When performing vertical ventilation, what is the recommended location for the initial cut relative to the fire's location?",
     options: ["Directly above the fire", "Between the fire and the exit", "At the point of entry", "Downwind of the fire"],
     correctIndex: 0,
+    userIndex: 1,
     status: "incorrect",
     flagged: false,
     explanation:
@@ -97,6 +103,7 @@ const reviewData: ReviewQuestion[] = [
       "What is the minimum rated service life for SCBA cylinders made of composite materials?",
     options: ["5 years", "10 years", "15 years", "20 years"],
     correctIndex: 2,
+    userIndex: 0,
     status: "incorrect",
     flagged: false,
     explanation:
@@ -109,6 +116,7 @@ const reviewData: ReviewQuestion[] = [
       "What is the primary purpose of a fire stop in building construction?",
     options: ["Prevent fire spread through openings", "Extinguish fires", "Detect smoke", "Provide emergency lighting"],
     correctIndex: 0,
+    userIndex: 1,
     status: "incorrect",
     flagged: false,
     explanation:
@@ -121,6 +129,7 @@ const reviewData: ReviewQuestion[] = [
       "During a mass casualty incident, which triage category indicates patients who need immediate life-saving intervention?",
     options: ["Green", "Yellow", "Red", "Black"],
     correctIndex: 2,
+    userIndex: 2,
     status: "correct",
     flagged: false,
     explanation:
@@ -133,6 +142,7 @@ const reviewData: ReviewQuestion[] = [
       "What type of load is created by the weight of the structure itself including walls, floors, and roof?",
     options: ["Live load", "Dead load", "Impact load", "Wind load"],
     correctIndex: 1,
+    userIndex: 0,
     status: "incorrect",
     flagged: false,
     explanation:
@@ -145,6 +155,7 @@ const reviewData: ReviewQuestion[] = [
       "What term describes the pre-mixed flaming combustion of gases or vapors that have accumulated in a confined space?",
     options: ["Backdraft", "Flashover", "Rollover", "Flameover"],
     correctIndex: 0,
+    userIndex: 0,
     status: "correct",
     flagged: false,
     explanation:
@@ -157,6 +168,7 @@ const reviewData: ReviewQuestion[] = [
       "Which NFPA standard covers the competencies for responders to hazardous materials incidents?",
     options: ["NFPA 472", "NFPA 1001", "NFPA 1500", "NFPA 1971"],
     correctIndex: 0,
+    userIndex: 2,
     status: "incorrect",
     flagged: false,
     explanation:
@@ -164,12 +176,180 @@ const reviewData: ReviewQuestion[] = [
   },
 ];
 
+function ExplainChatPanel({
+  question,
+  onClose,
+}: {
+  question: ReviewQuestion;
+  onClose: () => void;
+}) {
+  const [messages, setMessages] = useState<{ role: "user" | "ai"; text: string }[]>([
+    {
+      role: "ai",
+      text: "Hi! I can help you understand this question better. Ask me anything about it.",
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const correctAnswer = question.options[question.correctIndex];
+  const systemPrompt = `You are a helpful exam tutor for fire safety and building codes. The student is reviewing this question: "${question.question}". Correct answer: ${correctAnswer}. Explanation: ${question.explanation ?? "N/A"}. Answer clearly and concisely in 2-4 sentences.`;
+
+  const handleSend = async () => {
+    if (!input.trim() || loading) return;
+    const userMsg = input.trim();
+    setInput("");
+    const newMessages = [...messages, { role: "user" as const, text: userMsg }];
+    setMessages(newMessages);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system: systemPrompt,
+          messages: newMessages.map((m) => ({
+            role: m.role === "user" ? "user" : "assistant",
+            content: m.text,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const msg =
+          res.status === 503
+            ? "AI not configured. Add ANTHROPIC_API_KEY to .env.local."
+            : data.error ?? "Request failed";
+        throw new Error(msg);
+      }
+      setMessages([
+        ...newMessages,
+        { role: "ai", text: data.content ?? "No response." },
+      ]);
+    } catch {
+      setMessages([
+        ...newMessages,
+        { role: "ai", text: "Failed to connect. Please try again." },
+      ]);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 bg-black/30 z-40"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <aside
+        className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white shadow-xl z-50 flex flex-col border-l border-warm-200 animate-in slide-in-from-right duration-200"
+        role="dialog"
+        aria-label="Chat with AI about this question"
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-warm-200 shrink-0">
+          <div className="flex items-center gap-2">
+            <Bot className="w-4 h-4 text-violet-600" strokeWidth={2} />
+            <h3 className="text-sm font-semibold text-warm-800">Ask AI</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-lg bg-warm-100 text-warm-500 hover:bg-warm-200 hover:text-warm-700 transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" strokeWidth={2.5} />
+          </button>
+        </div>
+
+        <div className="px-4 py-3 border-b border-warm-200 shrink-0">
+          <div className="rounded-lg bg-warm-50 p-3 text-xs text-warm-600 leading-relaxed">
+            <span className="font-semibold text-warm-700">Q: </span>
+            {question.question.length > 90
+              ? question.question.slice(0, 90) + "…"
+              : question.question}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5">
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[85%] px-3 py-2.5 rounded-xl text-sm leading-relaxed ${
+                  msg.role === "user"
+                    ? "bg-neutral-800 text-white rounded-br-md"
+                    : "bg-warm-100 text-warm-900 rounded-bl-md"
+                }`}
+              >
+                {msg.role === "ai" && (
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Bot className="w-3 h-3 text-violet-600" strokeWidth={2} />
+                    <span className="text-[10px] font-bold text-violet-600 uppercase tracking-wide">
+                      AI Tutor
+                    </span>
+                  </div>
+                )}
+                {msg.text}
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="px-3 py-2.5 rounded-xl rounded-bl-md bg-warm-100 text-warm-500 text-sm">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Bot className="w-3 h-3 text-violet-600" strokeWidth={2} />
+                  <span className="text-[10px] font-bold text-violet-600 uppercase tracking-wide">
+                    AI Tutor
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  {[1, 2, 3].map((n) => (
+                    <span
+                      key={n}
+                      className="w-1.5 h-1.5 rounded-full bg-warm-400 animate-pulse"
+                      style={{ animationDelay: `${(n - 1) * 0.2}s` }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 border-t border-warm-200 shrink-0 flex gap-2 items-center">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Ask about this question…"
+            className="flex-1 px-3 py-2.5 text-sm font-inherit border border-warm-200 rounded-lg bg-warm-50 text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
+          />
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={loading || !input.trim()}
+            className={`w-10 h-10 rounded-lg shrink-0 flex items-center justify-center transition-colors ${
+              input.trim()
+                ? "bg-neutral-800 text-white hover:bg-neutral-900 cursor-pointer"
+                : "bg-warm-200 text-warm-400 cursor-default"
+            }`}
+          >
+            <Send className="w-4 h-4" strokeWidth={2} />
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+}
+
 interface ReviewTabClientProps {
   slug: string;
   meta: { name: string; subjects: string[] };
 }
-
-const OPTION_LETTERS = ["A", "B", "C", "D", "E"];
 
 export function ReviewTabClient({ slug, meta }: ReviewTabClientProps) {
   const [questions, setQuestions] = useState(reviewData);
@@ -177,11 +357,9 @@ export function ReviewTabClient({ slug, meta }: ReviewTabClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [askAiOpen, setAskAiOpen] = useState(false);
-  const [aiQuestion, setAiQuestion] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiMessages, setAiMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
+  const [explainChatOpen, setExplainChatOpen] = useState(false);
   const questionsPerPage = 5;
+  const labels = ["A", "B", "C", "D"];
 
   const counts = {
     all: questions.length,
@@ -264,77 +442,19 @@ export function ReviewTabClient({ slug, meta }: ReviewTabClientProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentQuestion, closeModal, goPrev, goNext]);
 
-  // Reset Ask AI chat when user switches to a different question
   useEffect(() => {
-    setAiMessages([]);
-    setAiQuestion("");
+    setExplainChatOpen(false);
   }, [selectedIndex]);
-
-  const handleAskAi = (e: React.MouseEvent, question?: (typeof filteredQuestions)[0]) => {
-    e.stopPropagation();
-    if (question) {
-      const idx = filteredQuestions.findIndex((f) => f.id === question.id);
-      if (idx >= 0) setSelectedIndex(idx);
-    }
-    setAskAiOpen(true);
-    setAiQuestion("");
-  };
-
-  const submitAskAi = async () => {
-    if (!aiQuestion.trim()) return;
-    const userMsg = aiQuestion.trim().toLowerCase();
-    setAiMessages((m) => [...m, { role: "user", content: aiQuestion.trim() }]);
-    setAiQuestion("");
-    setAiLoading(true);
-    // If user asks to explain, return the question's explanation when available
-    const wantsExplanation =
-      userMsg.includes("explain") ||
-      userMsg.includes("why") ||
-      userMsg.includes("how") ||
-      userMsg.startsWith("?");
-    // Support "explain 2" or "explain question 2" for a specific question
-    const numMatch = userMsg.match(/explain\s+(?:question\s+)?(\d+)/);
-    const targetIdx = numMatch
-      ? Math.min(Math.max(1, parseInt(numMatch[1], 10)), filteredQuestions.length) - 1
-      : selectedIndex ?? 0;
-    const q = filteredQuestions[targetIdx] ?? currentQuestion ?? filteredQuestions[0];
-    const hasExplanation = q?.explanation;
-    if (wantsExplanation && hasExplanation) {
-      await new Promise((r) => setTimeout(r, 400));
-      setAiMessages((m) => [
-        ...m,
-        { role: "assistant", content: q!.explanation! },
-      ]);
-    } else {
-      // Placeholder: AI integration - add your API call here
-      await new Promise((r) => setTimeout(r, 800));
-      setAiMessages((m) => [
-        ...m,
-        {
-          role: "assistant",
-          content: hasExplanation
-            ? `Here's the explanation:\n\n${q!.explanation}\n\nConnect your AI API for more detailed help.`
-            : "AI explanations are coming soon. Connect your AI API to get personalized help with this question.",
-        },
-      ]);
-    }
-    setAiLoading(false);
-  };
-
-  const closeAskAi = () => {
-    setAskAiOpen(false);
-    setAiMessages([]);
-  };
 
   const goToQuestionByIndex = (idx: number) => {
     if (idx >= 0 && idx < filteredQuestions.length) setSelectedIndex(idx);
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F8F7] pb-24">
-      <ExamTabHeader
-        title="Review Questions"
-        subtitle="Review your answers and focus on weak areas"
+    <div
+      className={`min-h-screen bg-background ${totalPages > 1 ? "pb-28 md:pb-24" : "pb-24"}`}
+    >
+      <ExamTabToolbar
         filterPills={[
           { value: "all", label: "All", count: counts.all },
           { value: "flagged", label: "Flagged", count: counts.flagged },
@@ -354,9 +474,9 @@ export function ReviewTabClient({ slug, meta }: ReviewTabClientProps) {
         }}
       />
 
-      {/* Questions List */}
-      <div className="max-w-3xl mx-auto px-4 py-6">
-        <div className="space-y-4">
+      {/* Questions List - mobile-optimized spacing and typography */}
+      <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <div className="space-y-3 sm:space-y-4">
           {paginatedQuestions.map((q) => (
             <Card
               key={q.id}
@@ -369,19 +489,16 @@ export function ReviewTabClient({ slug, meta }: ReviewTabClientProps) {
                   openQuestion(q);
                 }
               }}
-              className="rounded-xl border border-warm-200 bg-card shadow-sm ring-1 ring-warm-200/60 overflow-hidden cursor-pointer transition-colors hover:border-teal-300 hover:shadow-md hover:shadow-teal-500/5 active:bg-warm-50"
+              className="rounded-2xl border border-warm-200 bg-white shadow-sm overflow-hidden cursor-pointer transition-colors hover:border-gray-400 hover:shadow-md active:bg-warm-50 py-3 min-h-[44px]"
             >
-              <CardHeader className="pb-3 pt-5 px-5">
-                <div className="flex items-start justify-between gap-3">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Question
+              <CardHeader className="pb-2 pt-3 px-3 sm:px-4">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-warm-100 text-warm-700 border border-warm-200/80">
+                    {q.category}
                   </span>
                   <button
                     onClick={(e) => toggleFlag(q.id, e)}
-                    className={`p-1.5 rounded-lg transition-colors ${
+                    className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 p-1.5 rounded-lg transition-colors shrink-0 flex items-center justify-center -mr-1 ${
                       q.flagged ? "text-amber-500 bg-amber-50" : "text-warm-400 hover:text-warm-600 hover:bg-warm-100"
                     }`}
                     aria-label={q.flagged ? "Unpin question" : "Pin question"}
@@ -391,44 +508,10 @@ export function ReviewTabClient({ slug, meta }: ReviewTabClientProps) {
                     </svg>
                   </button>
                 </div>
-                <p className="text-warm-900 font-semibold leading-relaxed pt-4 text-[15px]">
+                <p className="text-warm-900 font-semibold leading-snug sm:leading-relaxed pt-2 sm:pt-2.5 text-sm sm:text-[15px]">
                   {q.question}
                 </p>
               </CardHeader>
-              <CardContent className="px-5 pb-4 space-y-2">
-                {q.options?.map((opt, idx) => {
-                  const letter = String.fromCharCode(65 + idx);
-                  return (
-                    <div
-                      key={idx}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 bg-warm-100/80 text-left"
-                    >
-                      <span className="flex-shrink-0 w-7 h-7 rounded-full bg-warm-200/80 text-warm-600 text-sm font-medium flex items-center justify-center">
-                        {letter}
-                      </span>
-                      <span className="text-warm-700 text-sm">{opt}</span>
-                    </div>
-                  );
-                })}
-              </CardContent>
-              <div className="flex items-center justify-between px-5 py-4 border-t border-warm-200 bg-warm-100/60">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-warm-200/80 text-warm-700">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                  {q.category}
-                </span>
-                <button
-                  type="button"
-                  onClick={(e) => handleAskAi(e, q)}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  Ask AI
-                </button>
-              </div>
             </Card>
           ))}
         </div>
@@ -455,22 +538,22 @@ export function ReviewTabClient({ slug, meta }: ReviewTabClientProps) {
         )}
       </div>
 
-      {/* Fixed Pagination */}
+      {/* Fixed Pagination - sits above tab bar on mobile, touch-friendly tap targets */}
       {totalPages > 1 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-[#F8F8F7] border-t border-warm-200 shadow-lg">
-          <div className="max-w-3xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
+        <div className="fixed left-0 right-0 bg-white border-t border-warm-200 shadow-lg bottom-0">
+          <div className="max-w-3xl mx-auto px-4 py-3 sm:py-4">
+            <div className="flex items-center justify-between gap-2">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                className={`flex items-center gap-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                   currentPage === 1
                     ? "text-warm-300 cursor-not-allowed"
-                    : "text-warm-700 hover:bg-warm-100"
+                    : "text-warm-700 hover:bg-warm-100 active:bg-warm-200"
                 }`}
               >
                 <svg
-                  className="w-5 h-5"
+                  className="w-5 h-5 shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -482,19 +565,19 @@ export function ReviewTabClient({ slug, meta }: ReviewTabClientProps) {
                     d="M15 19l-7-7 7-7"
                   />
                 </svg>
-                Previous
+                <span className="hidden sm:inline">Previous</span>
               </button>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5 sm:gap-1 overflow-x-auto scrollbar-hide justify-center min-w-0 flex-1">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                   (page) => (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`w-10 h-10 rounded-full font-medium text-sm transition-colors ${
+                      className={`min-w-[44px] min-h-[44px] sm:min-w-10 sm:min-h-10 w-10 h-10 rounded-full font-medium text-sm transition-colors shrink-0 flex items-center justify-center ${
                         currentPage === page
-                          ? "bg-teal-600 text-white"
-                          : "text-warm-600 hover:bg-warm-100"
+                          ? "bg-neutral-800 text-white"
+                          : "text-warm-600 hover:bg-warm-100 active:bg-warm-200"
                       }`}
                     >
                       {page}
@@ -508,15 +591,15 @@ export function ReviewTabClient({ slug, meta }: ReviewTabClientProps) {
                   setCurrentPage((p) => Math.min(totalPages, p + 1))
                 }
                 disabled={currentPage === totalPages}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                className={`flex items-center gap-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                   currentPage === totalPages
                     ? "text-warm-300 cursor-not-allowed"
-                    : "text-warm-700 hover:bg-warm-100"
+                    : "text-warm-700 hover:bg-warm-100 active:bg-warm-200"
                 }`}
               >
-                Next
+                <span className="hidden sm:inline">Next</span>
                 <svg
-                  className="w-5 h-5"
+                  className="w-5 h-5 shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -534,233 +617,202 @@ export function ReviewTabClient({ slug, meta }: ReviewTabClientProps) {
         </div>
       )}
 
-      {/* Full-screen question modal */}
+      {/* Full-screen question modal — redesigned detail view */}
       {currentQuestion && (
         <div
-          className="fixed inset-0 z-50 flex flex-col bg-[#F8F8F7]"
+          className="fixed inset-0 z-50 flex flex-col bg-background"
           role="dialog"
           aria-modal="true"
         >
-          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-warm-200 bg-[#F8F8F7] shrink-0">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
+          {/* Header — clean, minimal */}
+          <header className="flex items-center justify-between px-4 sm:px-6 h-14 shrink-0 bg-card border-b border-border z-20">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <button
+                type="button"
                 onClick={closeModal}
-                className="gap-2 min-h-10"
+                className="flex items-center justify-center w-9 h-9 rounded-lg text-warm-500 hover:bg-warm-100 hover:text-warm-700 transition-colors shrink-0"
+                aria-label="Close"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-                Close
-              </Button>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide bg-teal-100 text-teal-700">
-                {slug.toUpperCase()} Review
+              </button>
+              <span className="text-xs font-semibold text-neutral-700 uppercase tracking-wider truncate">
+                {slug} Review
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-warm-200/80 text-warm-700">
-                {currentQuestion.category}
-              </span>
+              <span className="hidden sm:inline text-sm text-warm-500 truncate">· {currentQuestion.category}</span>
             </div>
-            <span className="text-sm font-semibold tabular-nums text-warm-600">
-              {selectedIndex! + 1} / {filteredQuestions.length}
+
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-baseline gap-1">
+              <span className="text-sm font-semibold text-warm-900">
+                {selectedIndex! + 1}
+              </span>
+              <span className="text-sm text-warm-500">/ {filteredQuestions.length}</span>
+            </div>
+
+            <div className="flex items-center gap-2 min-w-0 justify-end">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-neutral-800 text-white hover:bg-neutral-900 transition-colors shrink-0"
+              >
+                Done
+              </button>
+            </div>
+          </header>
+
+          {/* Progress bar — subtle */}
+          <div className="h-0.5 bg-warm-200 shrink-0">
+            <div
+              className="h-full bg-neutral-700 transition-all duration-300 ease-out"
+              style={{ width: `${((selectedIndex! + 1) / filteredQuestions.length) * 100}%` }}
+            />
+          </div>
+
+          {/* Body: question area — compact card */}
+          <div className="flex-1 flex overflow-hidden min-h-0">
+            <main className="flex-1 overflow-y-auto flex flex-col min-h-0">
+              <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-24">
+                <div className="flex flex-col bg-white rounded-[14px] border border-warm-200 overflow-hidden shadow-sm">
+                  {/* Card top row — Question badge */}
+                  <div className="pt-4 sm:pt-5 px-4 sm:px-6 flex items-start justify-between shrink-0">
+                    <div className="inline-flex items-center gap-1.5 bg-amber-100 px-3 py-1.5 rounded-md">
+                      <HelpCircle className="w-3.5 h-3.5 text-amber-600" strokeWidth={2.5} />
+                      <span className="text-xs font-bold text-amber-600">
+                        Question
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Question text */}
+                  <div className="pt-2 px-4 sm:px-6">
+                    <p className="text-[17px] sm:text-lg font-semibold text-warm-900 leading-relaxed">
+                      {currentQuestion.question}
+                    </p>
+                  </div>
+
+                  {/* Options — styled buttons like ExamReview */}
+                  <div className="pt-2.5 px-4 sm:px-6 flex flex-col gap-2">
+                    {currentQuestion.options.map((opt, i) => {
+                      const isCorrect = i === currentQuestion.correctIndex;
+                      const isUser = i === currentQuestion.userIndex;
+                      const isWrong = isUser && !isCorrect;
+                      const isRight = isCorrect;
+
+                      let bg = "bg-warm-50";
+                      let border = "border-warm-200";
+                      let textColor = "text-warm-800";
+                      let badgeBg = "bg-warm-100";
+                      let badgeColor = "text-warm-600";
+
+                      if (isRight) {
+                        bg = "bg-emerald-50";
+                        border = "border-emerald-200";
+                        textColor = "text-emerald-800";
+                        badgeBg = "bg-emerald-100";
+                        badgeColor = "text-emerald-600";
+                      } else if (isWrong) {
+                        bg = "bg-red-50";
+                        border = "border-red-200";
+                        textColor = "text-red-800";
+                        badgeBg = "bg-red-100";
+                        badgeColor = "text-red-600";
+                      }
+
+                      return (
+                        <div
+                          key={i}
+                          className={`flex items-center gap-3 rounded-[10px] border px-4 py-3 transition-colors ${bg} ${border} ${textColor}`}
+                        >
+                          <span
+                            className={`w-7 h-7 rounded-md flex items-center justify-center text-sm font-bold shrink-0 ${badgeBg} ${badgeColor}`}
+                          >
+                            {labels[i]}
+                          </span>
+                          <span className="flex-1 text-[15px] sm:text-base font-medium">
+                            {opt}
+                          </span>
+                          {isRight && (
+                            <span className="text-sm font-bold text-emerald-600 shrink-0">
+                              ✓ Correct
+                            </span>
+                          )}
+                          {isWrong && (
+                            <span className="text-sm font-bold text-red-600 shrink-0">
+                              ✗ Wrong
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Explanation */}
+                  {currentQuestion.explanation && (
+                    <div className="mt-3 mx-4 sm:mx-6">
+                      <div className="p-4 rounded-[10px] bg-warm-50 border border-warm-200">
+                        <p className="text-sm font-bold text-warm-500 uppercase tracking-wider mb-2">
+                          Explanation
+                        </p>
+                        <p className="text-[15px] sm:text-base text-warm-700 leading-relaxed">
+                          {currentQuestion.explanation}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Footer — Explain button bottom right */}
+                  <div className="pt-3 px-4 sm:px-6 pb-4 flex justify-end border-t border-warm-100 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setExplainChatOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold bg-neutral-800 text-white hover:bg-neutral-900 transition-colors"
+                    >
+                      <MessageSquare className="w-4 h-4" strokeWidth={2} />
+                      Explain
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </main>
+          </div>
+
+          {/* Explain — side chat panel with AI */}
+          {explainChatOpen && (
+            <ExplainChatPanel
+              question={currentQuestion}
+              onClose={() => setExplainChatOpen(false)}
+            />
+          )}
+
+          {/* Footer — Prev/Next only (modal is full-screen, no tab bar visible) */}
+          <footer className="fixed bottom-0 left-0 right-0 bg-card border-t border-border py-3 px-4 sm:px-6 flex items-center justify-between z-10 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] pb-[env(safe-area-inset-bottom)]">
+            <button
+              type="button"
+              onClick={() => goPrev()}
+              disabled={selectedIndex === 0}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-warm-600 hover:bg-warm-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Prev
+            </button>
+            <span className="text-sm text-warm-500">
+              {selectedIndex! + 1} of {filteredQuestions.length}
             </span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={goPrev}
-                disabled={selectedIndex === 0}
-                className="h-10 w-10"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={goNext}
-                disabled={selectedIndex === filteredQuestions.length - 1}
-                className="h-10 w-10"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Button>
-            </div>
-          </div>
-          <div className="flex-1 flex min-h-0">
-            <div className="flex-1 min-w-0 flex flex-col min-h-0">
-              <div className="flex-1 overflow-y-auto">
-                <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-                <h2 className="text-xl font-semibold text-warm-900 leading-relaxed mb-6">
-                  {currentQuestion.question}
-                </h2>
-                <div className="space-y-3 mb-6">
-                  {currentQuestion.options?.map((opt, idx) => {
-                    const isCorrect = idx === currentQuestion.correctIndex;
-                    const letter = OPTION_LETTERS[idx] ?? String(idx + 1);
-                    return (
-                      <div
-                        key={idx}
-                        className={`flex items-center gap-4 rounded-xl px-4 py-4 border-2 ${
-                          isCorrect
-                            ? "bg-emerald-50 border-emerald-300"
-                            : "bg-warm-50 border-warm-200"
-                        }`}
-                      >
-                        <span
-                          className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
-                            isCorrect ? "bg-emerald-200 text-emerald-800" : "bg-warm-200 text-warm-600"
-                          }`}
-                        >
-                          {letter}
-                        </span>
-                        <span className="flex-1 text-warm-800">{opt}</span>
-                        {isCorrect && (
-                          <span className="text-emerald-600 font-medium text-sm">Correct</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                {currentQuestion.explanation && (
-                  <div className="rounded-xl border border-teal-200/80 bg-teal-50/60 p-4 mb-6">
-                    <h3 className="text-sm font-semibold text-teal-800 mb-2">Explanation</h3>
-                    <p className="text-teal-900/90 text-sm leading-relaxed">
-                      {currentQuestion.explanation}
-                    </p>
-                  </div>
-                )}
-                <div className="flex justify-end mb-8">
-                  <Button
-                    variant="outline"
-                    onClick={(e) => handleAskAi(e, currentQuestion)}
-                    className="gap-2 border-teal-200 text-teal-700 hover:bg-teal-50 hover:border-teal-300"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                    Ask AI
-                  </Button>
-                </div>
-                </div>
-              </div>
-              {/* Pagination at bottom of full view - shrink-0 so no extra space */}
-              <div className="shrink-0 border-t border-warm-200 bg-[#F8F8F7] py-4">
-                <div className="max-w-2xl mx-auto px-4 sm:px-6">
-                  <div className="flex items-center justify-between gap-4 flex-wrap">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => goPrev()}
-                      disabled={selectedIndex === 0}
-                      className="gap-1"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                      Previous
-                    </Button>
-                    <div className="flex items-center gap-1 flex-wrap justify-center max-w-md overflow-x-auto py-1">
-                      {filteredQuestions.map((_, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => goToQuestionByIndex(idx)}
-                          className={`min-w-8 h-8 rounded-lg text-sm font-medium transition-colors shrink-0 ${
-                            selectedIndex === idx
-                              ? "bg-teal-600 text-white"
-                              : "bg-warm-100 text-warm-600 hover:bg-warm-200"
-                          }`}
-                        >
-                          {idx + 1}
-                        </button>
-                      ))}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => goNext()}
-                      disabled={selectedIndex === filteredQuestions.length - 1}
-                      className="gap-1"
-                    >
-                      Next
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* Side chat panel */}
-            {askAiOpen && (
-              <div className="w-full sm:w-96 border-l border-warm-200 flex flex-col bg-[#F8F8F7] shrink-0">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-warm-200 bg-teal-50/50">
-                  <div>
-                    <h3 className="font-semibold text-warm-900">Ask AI</h3>
-                    <p className="text-xs text-warm-500 mt-0.5 line-clamp-1">
-                      Q{selectedIndex! + 1}: {currentQuestion.question.slice(0, 40)}…
-                    </p>
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={closeAskAi} className="h-9 w-9">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </Button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
-                  {aiMessages.length === 0 && (
-                    <p className="text-sm text-warm-500">
-                      Ask anything about this question. Type below and press Ask.
-                    </p>
-                  )}
-                  {aiMessages.map((msg, i) => (
-                    <div
-                      key={i}
-                      className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                    >
-                      <div
-                        className={`max-w-[85%] rounded-xl px-4 py-2 text-sm ${
-                          msg.role === "user"
-                            ? "bg-teal-600 text-white"
-                            : "bg-teal-50 text-warm-800 border border-teal-100"
-                        }`}
-                      >
-                        {msg.content}
-                      </div>
-                    </div>
-                  ))}
-                  {aiLoading && (
-                    <div className="flex justify-start">
-                      <div className="rounded-xl px-4 py-2 text-sm bg-warm-100 text-warm-500">
-                        Thinking…
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="p-4 border-t border-warm-200">
-                  <div className="flex gap-2">
-                    <Textarea
-                      placeholder="Ask about this question..."
-                      value={aiQuestion}
-                      onChange={(e) => setAiQuestion(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          submitAskAi();
-                        }
-                      }}
-                      className="min-h-12 resize-none"
-                    />
-                    <Button onClick={submitAskAi} disabled={aiLoading || !aiQuestion.trim()}>
-                      Ask
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+            <button
+              type="button"
+              onClick={() => goNext()}
+              disabled={selectedIndex === filteredQuestions.length - 1}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-warm-600 hover:bg-warm-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+            >
+              Next
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </footer>
         </div>
       )}
 

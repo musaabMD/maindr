@@ -8,7 +8,7 @@ import type { AuthConfig } from "convex/server";
  *
  * Set in Convex Dashboard (Settings → Environment Variables):
  * - CLERK_JWT_ISSUER_DOMAIN = https://clerk.drnote.co (production)
- * - CLERK_JWT_ISSUER_DOMAIN_DEV = https://nice-wevevil-50.clerk.accounts.dev (development)
+ * - CLERK_JWT_ISSUER_DOMAIN_DEV = https://nice-weevil-50.clerk.accounts.dev (development)
  *
  * See https://docs.convex.dev/auth/clerk
  */

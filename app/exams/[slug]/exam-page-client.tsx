@@ -1,11 +1,10 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { useExamLayout } from "@/components/exams/exam-layout-context";
-import { TiltedArt } from "@/components/exams/tilted-art";
+import { useUser } from "@clerk/nextjs";
 import { StudyQuote } from "@/components/exams/study-quote";
+import { QuizModes } from "@/components/exams/quiz-modes";
 import { Card, CardContent } from "@/components/ui/card";
+import { getShortGreeting } from "@/lib/utils";
 
 type ExamMeta = {
   name: string;
@@ -24,31 +23,21 @@ interface ExamPageClientProps {
 }
 
 export function ExamPageClient({ slug, meta }: ExamPageClientProps) {
-  const exam = useQuery(api.exams.getBySlug, { slug });
-  const color = exam?.color ?? "var(--primary)";
+  const { user } = useUser();
+  const userName = user?.firstName ?? user?.username ?? "there";
 
   return (
     <main className="mx-auto max-w-[900px] px-6 py-12">
       <article>
         <header className="mb-10">
-          <div
-            className="relative flex flex-col justify-end overflow-hidden rounded-2xl p-8 min-h-[200px] mb-8"
-            style={{ background: color }}
+          <h1
+            className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4"
+            style={{ fontFamily: "var(--font-serif)" }}
           >
-            <h1
-              className="relative z-10 text-white font-bold tracking-tight drop-shadow-sm"
-              style={{
-                fontFamily: "var(--font-bebas)",
-                fontSize: "clamp(36px, 5vw, 52px)",
-                letterSpacing: "0.06em",
-                lineHeight: 1.1,
-                textShadow: "0 1px 2px rgba(0,0,0,0.2)",
-              }}
-            >
-              {meta.name}
-            </h1>
-            <TiltedArt name={meta.name} />
-          </div>
+            {getShortGreeting()}, {userName}!
+          </h1>
+
+          <StudyQuote inline />
 
           <p className="text-lg mb-6 text-muted-foreground leading-relaxed">
             {meta.description}
@@ -72,20 +61,7 @@ export function ExamPageClient({ slug, meta }: ExamPageClientProps) {
             ))}
           </dl>
 
-          <div className="flex flex-wrap gap-2 mb-8">
-            {meta.subjects.map((s) => (
-              <span
-                key={s}
-                className="rounded-full px-3 py-1 text-sm font-medium bg-primary/15 text-primary border border-primary/25"
-              >
-                {s}
-              </span>
-            ))}
-          </div>
-
-          <div className="mb-10">
-            <StudyQuote />
-          </div>
+          <QuizModes slug={slug} meta={meta} />
         </header>
       </article>
     </main>

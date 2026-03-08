@@ -10,11 +10,11 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const meta = getExamMeta(slug);
-  if (!meta) return { title: "Self Assessments | DrNote" };
+  if (!meta) return { title: "Exams | DrNote" };
 
   return {
-    title: `${meta.name} Self Assessments — Practice Tests | DrNote`,
-    description: `Take self assessments for ${meta.name}. Practice tests and timed quizzes.`,
+    title: `${meta.name} Exams — Practice Tests | DrNote`,
+    description: `Take exams for ${meta.name}. Practice tests and timed quizzes.`,
   };
 }
 

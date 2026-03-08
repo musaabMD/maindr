@@ -13,7 +13,12 @@ const FALLBACK_QUOTES: ZenQuote[] = [
   { q: "The beautiful thing about learning is that nobody can take it away from you.", a: "B.B. King" },
 ];
 
-export function StudyQuote() {
+interface StudyQuoteProps {
+  /** When true, renders as plain blockquote without card/border */
+  inline?: boolean;
+}
+
+export function StudyQuote({ inline }: StudyQuoteProps) {
   const [quote, setQuote] = useState<ZenQuote | null>(null);
 
   useEffect(() => {
@@ -22,17 +27,25 @@ export function StudyQuote() {
 
   if (!quote) return null;
 
+  const content = (
+    <blockquote className="italic">
+      <p className="text-xl sm:text-2xl leading-relaxed mb-3 text-foreground">
+        &ldquo;{quote.q}&rdquo;
+      </p>
+      <cite className="text-base not-italic text-muted-foreground">
+        — {quote.a}
+      </cite>
+    </blockquote>
+  );
+
+  if (inline) {
+    return <div className="mb-6">{content}</div>;
+  }
+
   return (
     <Card className="border-l-4 border-l-primary bg-card">
       <CardContent className="pt-6 pb-6">
-        <blockquote className="italic">
-          <p className="text-xl sm:text-2xl leading-relaxed mb-3 text-foreground">
-            &ldquo;{quote.q}&rdquo;
-          </p>
-          <cite className="text-base not-italic text-muted-foreground">
-            — {quote.a}
-          </cite>
-        </blockquote>
+        {content}
       </CardContent>
     </Card>
   );

@@ -1,10 +1,14 @@
-import type { Metadata } from "next";
-import { Bricolage_Grotesque, Bebas_Neue, DM_Mono, Source_Serif_4 } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Bricolage_Grotesque, Bebas_Neue, DM_Mono, Source_Serif_4, Roboto } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Analytics } from "@vercel/analytics/next";
 import ConvexClientProvider from "./ConvexClientProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 import "./globals.css";
+import { cn } from "@/lib/utils";
+
+const roboto = Roboto({subsets:['latin'],variable:'--font-sans'});
 
 const bricolage = Bricolage_Grotesque({
   variable: "--font-bricolage",
@@ -33,6 +37,13 @@ export const metadata: Metadata = {
   description: "Just DrNote, Test Prep For Medical Exams. 1,000+ standardized tests.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -40,11 +51,13 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider appearance={clerkAppearance}>
-      <html lang="en">
+      <html lang="en" className={cn("font-sans", roboto.variable)}>
         <body
-          className={`${bricolage.variable} ${bebas.variable} ${dmMono.variable} ${sourceSerif.variable} antialiased bg-[#F8F8F7]`}
+          className={`${bricolage.variable} ${bebas.variable} ${dmMono.variable} ${sourceSerif.variable} antialiased bg-white overflow-x-hidden`}
         >
-          <ConvexClientProvider>{children}</ConvexClientProvider>
+          <ConvexClientProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </ConvexClientProvider>
           <Analytics />
         </body>
       </html>

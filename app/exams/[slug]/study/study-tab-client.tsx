@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ExamTabHeader } from "@/components/exams/exam-tab-header";
+import { ExamTabToolbar } from "@/components/exams/exam-tab-toolbar";
+import { QuestionUI, ExamResults, ExamFullscreen } from "@/components/exams/mock-exam";
 
 interface StudyTabClientProps {
   slug: string;
@@ -114,9 +115,11 @@ function PinIcon({ filled }: { filled: boolean }) {
 function StartModal({
   item,
   onClose,
+  onStart,
 }: {
   item: StudySet | null;
   onClose: () => void;
+  onStart: (item: StudySet) => void;
 }) {
   if (!item) return null;
   const color = scoreColor(item.progress);
@@ -276,6 +279,7 @@ function StartModal({
             Cancel
           </button>
           <button
+            onClick={() => onStart(item)}
             style={{
               flex: 2,
               padding: "11px 0",
@@ -324,143 +328,57 @@ function StudyCard({
       onClick={() => onSelect(item)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{
-        display: "grid",
-        gridTemplateColumns: "52px 1fr 150px 280px 52px",
-        alignItems: "center",
-        padding: "18px 24px",
-        borderBottom: isLast ? "none" : "1px solid #D1D5DB",
-        background: hovered ? "#F9FAFB" : "#fff",
-        transition: "background 0.12s",
-        cursor: "pointer",
-      }}
+      className={`flex items-center gap-2 sm:gap-4 py-2.5 px-3 sm:py-4 sm:px-6 border-b border-gray-200 last:border-b-0 transition-colors cursor-pointer ${
+        hovered ? "bg-gray-50" : "bg-white"
+      }`}
     >
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            minWidth: 28,
-            height: 28,
-            padding: "0 8px",
-            fontSize: 13,
-            fontWeight: 700,
-            color: "#fff",
-            background: "#2563EB",
-            borderRadius: 6,
-          }}
-        >
-          {index + 1}
-        </span>
-      </div>
-      <div style={{ paddingRight: 24 }}>
-        <div
-          style={{
-            fontSize: 15.5,
-            fontWeight: 600,
-            color: "#111827",
-            lineHeight: 1.3,
-          }}
-        >
+      <span className="shrink-0 w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-[11px] sm:text-xs font-bold text-white bg-blue-600 rounded">
+        {index + 1}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="text-[13px] sm:text-base font-semibold text-gray-900 truncate leading-tight">
           {item.title}
         </div>
         {showSubject && (
-          <div
-            style={{
-              fontSize: 12,
-              color: "#6B7280",
-              fontWeight: 500,
-              marginTop: 2,
-            }}
-          >
-            {item.subject}
-          </div>
+          <div className="text-[11px] text-gray-500 mt-0.5 truncate">{item.subject}</div>
         )}
       </div>
-
-      <div
-        style={{
-          fontSize: 14.5,
-          color: "#374151",
-          fontWeight: 500,
-          textAlign: "right",
-          paddingRight: 24,
-        }}
-      >
-        {notStarted ? (
-          <span style={{ color: "#9CA3AF" }}>{item.questions} Q</span>
-        ) : (
-          `${correct} / ${item.questions}`
-        )}
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div className="shrink-0 flex items-center gap-1 sm:gap-2 whitespace-nowrap">
+        <span className="text-[11px] sm:text-sm font-medium text-gray-600 tabular-nums">
+          {notStarted ? (
+            <span className="text-gray-400">{item.questions}Q</span>
+          ) : (
+            `${correct}/${item.questions}`
+          )}
+        </span>
         <span
-          style={{
-            fontSize: 16,
-            fontWeight: 800,
-            color: notStarted ? "#9CA3AF" : color,
-            minWidth: 48,
-            textAlign: "right",
-            letterSpacing: -0.3,
-          }}
+          className="text-xs sm:text-sm font-bold tabular-nums min-w-[2.5rem] text-right"
+          style={{ color: notStarted ? "#9CA3AF" : color }}
         >
           {notStarted ? "—" : `${item.progress}%`}
         </span>
+      </div>
+      <div className="hidden sm:block flex-1 min-w-[80px] max-w-[140px] h-2 bg-gray-200 rounded-full overflow-hidden">
         <div
-          style={{
-            flex: 1,
-            background: "#E5E7EB",
-            borderRadius: 99,
-            height: 10,
-            overflow: "hidden",
-            border: "1px solid #D1D5DB",
-          }}
-        >
-          <div
-            style={{
-              width: `${item.progress}%`,
-              height: "100%",
-              borderRadius: 99,
-              background: color,
-              transition: "width 0.5s ease",
-            }}
-          />
-        </div>
+          className="h-full rounded-full transition-[width] duration-500"
+          style={{ width: `${item.progress}%`, background: color }}
+        />
       </div>
-
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onTogglePin(item.id);
-          }}
-          style={{
-            background: pinned ? "#F3F4F6" : "#fff",
-            border: pinned ? "1.5px solid #9CA3AF" : "1.5px solid #D1D5DB",
-            cursor: "pointer",
-            padding: 6,
-            borderRadius: 7,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "border-color 0.15s, background 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            e.stopPropagation();
-            e.currentTarget.style.borderColor = "#6B7280";
-            e.currentTarget.style.background = "#F3F4F6";
-          }}
-          onMouseLeave={(e) => {
-            e.stopPropagation();
-            e.currentTarget.style.borderColor = pinned ? "#9CA3AF" : "#D1D5DB";
-            e.currentTarget.style.background = pinned ? "#F3F4F6" : "#fff";
-          }}
-        >
-          <PinIcon filled={pinned} />
-        </button>
+      <div className="sm:hidden w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden shrink-0">
+        <div
+          className="h-full rounded-full transition-[width] duration-500"
+          style={{ width: `${item.progress}%`, background: color }}
+        />
       </div>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onTogglePin(item.id);
+        }}
+        className="shrink-0 p-1 rounded border border-gray-300 hover:border-gray-500 transition-colors"
+      >
+        <PinIcon filled={pinned} />
+      </button>
     </div>
   );
 }
@@ -492,15 +410,11 @@ function CardContainer({
       </div>
     );
   return (
-    <div
-      style={{
-        border: "1.5px solid #D1D5DB",
-        borderRadius: 12,
-        overflow: "hidden",
-        background: "#fff",
-      }}
-    >
-      {items.map((item, i) => (
+    <div className="-mx-3 sm:mx-0">
+      <div
+        className="rounded-2xl border border-warm-200 bg-white shadow-sm overflow-hidden"
+      >
+        {items.map((item, i) => (
         <StudyCard
           key={item.id}
           item={item}
@@ -512,17 +426,37 @@ function CardContainer({
           pinned={pinnedIds.has(item.id)}
         />
       ))}
+      </div>
     </div>
   );
 }
+
+type ExamView = "exam" | "results" | null;
 
 export function StudyTabClient({ slug, meta }: StudyTabClientProps) {
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("date");
   const [selected, setSelected] = useState<StudySet | null>(null);
+  const [examView, setExamView] = useState<ExamView>(null);
+  const [examStudySet, setExamStudySet] = useState<StudySet | null>(null);
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(
     () => new Set(MOCK_STUDY_SETS.filter((s) => s.pinned).map((s) => s.id))
   );
+
+  const handleStartExam = (item: StudySet) => {
+    setSelected(null);
+    setExamStudySet(item);
+    setExamView("exam");
+  };
+
+  const handleExamSubmit = () => {
+    setExamView("results");
+  };
+
+  const handleReturnFromResults = () => {
+    setExamView(null);
+    setExamStudySet(null);
+  };
 
   const togglePin = (id: string) => {
     setPinnedIds((prev) => {
@@ -564,16 +498,32 @@ export function StudyTabClient({ slug, meta }: StudyTabClientProps) {
   const pinnedCount = pinnedIds.size;
 
   return (
-    <div className="min-h-screen bg-[#F8F8F7] pb-24">
+    <div className="min-h-screen bg-white">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
       `}</style>
 
-      <StartModal item={selected} onClose={() => setSelected(null)} />
+      <StartModal
+        item={selected}
+        onClose={() => setSelected(null)}
+        onStart={handleStartExam}
+      />
 
-      <ExamTabHeader
-        title="Study Sets"
-        subtitle={`${filteredAndSorted.length} sets · ${pinnedCount} pinned`}
+      {examView === "exam" && (
+        <QuestionUI
+          examTitle={examStudySet?.title ?? "Study Set"}
+          timeLimit={600}
+          onSubmitExam={handleExamSubmit}
+        />
+      )}
+
+      {examView === "results" && (
+        <ExamFullscreen isActive>
+          <ExamResults onReturnToMenu={handleReturnFromResults} />
+        </ExamFullscreen>
+      )}
+
+      <ExamTabToolbar
         sortTabs={[
           { value: "date", label: "By Date" },
           { value: "subject", label: "By Subject" },
@@ -585,7 +535,7 @@ export function StudyTabClient({ slug, meta }: StudyTabClientProps) {
         onSearchChange={setSearch}
       />
 
-      <main className="mx-auto max-w-[1200px] w-full px-6 py-10 sm:px-10 sm:py-12">
+      <main className="mx-auto max-w-[1200px] w-full px-3 py-4 sm:px-6 sm:py-10 md:px-10 md:py-12">
         <CardContainer
           items={filteredAndSorted}
           showSubject={sortMode === "subject"}
