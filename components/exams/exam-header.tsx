@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Show, SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
-import { Sparkles, PanelLeft } from "lucide-react";
-import { useTheme } from "./theme";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { PanelLeft } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 interface ExamHeaderProps {
   dark: boolean;
@@ -19,101 +19,81 @@ interface ExamHeaderProps {
   useShadcnSidebar?: boolean;
 }
 
-export function ExamHeader({ dark, setDark, examSlug, examName, pageTitle, sidebarOpen, onSidebarOpenChange, useShadcnSidebar }: ExamHeaderProps) {
-  const t = useTheme(dark);
-  const { user, isSignedIn } = useUser();
-
+export function ExamHeader({
+  dark,
+  pageTitle,
+  sidebarOpen,
+  onSidebarOpenChange,
+  useShadcnSidebar,
+}: ExamHeaderProps) {
   return (
-    <>
-      <header
-        className="sticky top-0 z-[160] flex items-center gap-1.5 sm:gap-4 md:gap-6 px-3 sm:px-6 py-2.5 sm:py-4 border-b md:border-b-0 min-h-[var(--header-height)]"
-        style={{
-          background: dark ? "#0e0e10" : "#ffffff",
-          borderColor: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-        }}
+    <header
+        className={cn(
+          "sticky top-0 z-[160] flex min-h-[var(--header-height)] items-center border-b px-4 py-3 sm:px-5 md:px-6",
+          /* Same surface as main column in light mode; subtle separator like Chatbase top bar */
+          "border-zinc-200/60 bg-white dark:border-white/[0.08] dark:bg-[#0e0e10]"
+        )}
       >
-        {useShadcnSidebar ? (
-          <SidebarTrigger className="-ml-1 shrink-0" />
-        ) : onSidebarOpenChange ? (
-          <button
-            type="button"
-            onClick={() => onSidebarOpenChange(!sidebarOpen)}
-            className="shrink-0 rounded-md p-2 -ml-1 text-current hover:opacity-80 transition-opacity touch-manipulation"
-            style={{ color: t.subtext }}
-            aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-          >
-            <PanelLeft className="size-5" />
-          </button>
-        ) : null}
-        <Link
-          href="/"
-          className="flex min-w-0 shrink-0 items-baseline gap-1 sm:gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-        >
-          <span
-            className="font-bold tracking-tight"
-            style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: "clamp(20px, 5vw, 28px)",
-              color: t.text,
-            }}
-          >
-            DrNote
-          </span>
-          <span
-            className="text-xs sm:text-sm font-normal shrink-0"
-            style={{
-              fontFamily: "var(--font-bricolage)",
-              color: t.subtext,
-            }}
-          >
-            v2
-          </span>
-        </Link>
+        <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+          {useShadcnSidebar ? (
+            <SidebarTrigger className="-ml-0.5 shrink-0 rounded-lg p-2 text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-white/10" />
+          ) : onSidebarOpenChange ? (
+            <button
+              type="button"
+              onClick={() => onSidebarOpenChange(!sidebarOpen)}
+              className="-ml-0.5 shrink-0 touch-manipulation rounded-lg p-2 text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-white/10"
+              aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              <PanelLeft className="size-5" />
+            </button>
+          ) : null}
 
-        {pageTitle ? (
-          <span
-            className="hidden sm:block truncate max-w-[180px] md:max-w-[240px] text-sm font-medium ml-2 md:ml-4 pl-2 md:pl-4 border-l border-current border-opacity-20"
-            style={{ color: t.subtext }}
-          >
-            {pageTitle}
-          </span>
-        ) : null}
-
-        <div className="flex flex-1" aria-hidden />
-
-        <div className="flex shrink-0 items-center gap-1 sm:gap-3">
           <Link
-            href="/upgrade"
-            className="flex items-center gap-1.5 rounded-lg px-2 sm:px-2.5 py-1.5 shrink-0 cursor-pointer transition-colors hover:opacity-80 font-medium text-sm min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 justify-center sm:justify-start"
-            style={{
-              background: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-              color: t.text,
-            }}
-            title="Upgrade"
+            href="/"
+            className="group flex shrink-0 cursor-pointer items-baseline gap-1.5"
           >
-            <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="hidden sm:inline">Upgrade</span>
+            <span
+              className="font-bold tracking-tight text-zinc-900 transition-opacity group-hover:opacity-80 dark:text-white"
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: "clamp(1.15rem, 4vw, 1.4rem)",
+              }}
+            >
+              DrNote
+            </span>
+            <span
+              className="shrink-0 text-[0.7rem] font-medium tracking-tight text-zinc-500 sm:text-xs dark:text-zinc-400"
+              style={{ fontFamily: "var(--font-bricolage)" }}
+            >
+              v2
+            </span>
           </Link>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Show when="signed-out">
+
+          {pageTitle ? (
+            <span
+              className="hidden max-w-[160px] truncate border-l border-zinc-200 pl-3 text-sm font-medium text-zinc-500 sm:block md:max-w-[200px] md:pl-4 dark:border-white/[0.12] dark:text-zinc-400"
+            >
+              {pageTitle}
+            </span>
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <Show when="signed-out">
               <SignInButton mode="modal">
                 <button
-                  className="text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity px-3 py-2.5 sm:px-2 sm:py-1 min-h-[44px] sm:min-h-0 flex items-center justify-center rounded-lg"
-                  style={{ color: t.text }}
-                  aria-label="Sign in"
+                  type="button"
+                  className="min-h-10 rounded-full border border-zinc-200/90 bg-zinc-50/80 px-3.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100/90 dark:border-white/15 dark:bg-transparent dark:text-white dark:hover:bg-white/10 sm:min-h-9"
+                  style={{ fontFamily: "var(--font-bricolage)" }}
                 >
                   Sign in
                 </button>
               </SignInButton>
               <SignUpButton mode="modal">
                 <button
-                  className="text-sm font-medium rounded-lg border px-3 py-2.5 sm:px-3 sm:py-1.5 cursor-pointer hover:opacity-90 transition-opacity min-h-[44px] sm:min-h-0 flex items-center justify-center"
-                  style={{
-                    color: t.text,
-                    borderColor: t.border,
-                    background: dark ? "rgba(255,255,255,0.06)" : "#F2F2F0",
-                  }}
-                  aria-label="Sign up"
+                  type="button"
+                  className="min-h-10 rounded-full bg-primary px-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 dark:hover:bg-primary/85 sm:min-h-9"
+                  style={{ fontFamily: "var(--font-bricolage)" }}
                 >
                   Sign up
                 </button>
@@ -123,14 +103,13 @@ export function ExamHeader({ dark, setDark, examSlug, examName, pageTitle, sideb
               <UserButton
                 appearance={{
                   elements: {
-                    avatarBox: "h-8 w-8 sm:h-9 sm:w-9",
+                    avatarBox:
+                      "h-8 w-8 sm:h-9 sm:w-9 ring-1 ring-zinc-200 dark:ring-white/15",
                   },
                 }}
               />
             </Show>
-          </div>
         </div>
       </header>
-    </>
   );
 }

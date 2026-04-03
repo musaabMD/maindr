@@ -8,7 +8,12 @@
  * @module
  */
 
+import type * as adminBootstrap from "../adminBootstrap.js";
+import type * as adminTasks from "../adminTasks.js";
+import type * as adminUploads from "../adminUploads.js";
+import type * as adminValidators from "../adminValidators.js";
 import type * as exams from "../exams.js";
+import type * as examsCatalog from "../examsCatalog.js";
 import type * as http from "../http.js";
 import type * as suggestedExams from "../suggestedExams.js";
 import type * as users from "../users.js";
@@ -20,7 +25,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  adminBootstrap: typeof adminBootstrap;
+  adminTasks: typeof adminTasks;
+  adminUploads: typeof adminUploads;
+  adminValidators: typeof adminValidators;
   exams: typeof exams;
+  examsCatalog: typeof examsCatalog;
   http: typeof http;
   suggestedExams: typeof suggestedExams;
   users: typeof users;

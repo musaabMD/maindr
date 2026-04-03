@@ -13,8 +13,6 @@ import {
   Settings2,
   SquareTerminal,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-
 import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
 import { NavSecondary } from "@/components/nav-secondary";

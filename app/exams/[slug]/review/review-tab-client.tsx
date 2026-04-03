@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Card, CardHeader } from "@/components/ui/card";
-import { ExamTabToolbar } from "@/components/exams/exam-tab-toolbar";
-import { Bot, Send, X, HelpCircle, MessageSquare } from "lucide-react";
+import { useSidebar } from "@/components/ui/sidebar";
+import { Bot, Send, X, HelpCircle, MessageSquare, Search } from "lucide-react";
 
 type ReviewQuestion = {
   id: number;
@@ -351,48 +350,37 @@ interface ReviewTabClientProps {
   meta: { name: string; subjects: string[] };
 }
 
+const FILTERS = ["All", "Flagged", "Incorrect", "Correct"] as const;
+
 export function ReviewTabClient({ slug, meta }: ReviewTabClientProps) {
+  const { isMobile, state } = useSidebar();
   const [questions, setQuestions] = useState(reviewData);
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState<typeof FILTERS[number]>("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [explainChatOpen, setExplainChatOpen] = useState(false);
-  const questionsPerPage = 5;
   const labels = ["A", "B", "C", "D"];
 
   const counts = {
-    all: questions.length,
-    flagged: questions.filter((q) => q.flagged).length,
-    incorrect: questions.filter((q) => q.status === "incorrect").length,
-    correct: questions.filter((q) => q.status === "correct").length,
+    All: questions.length,
+    Flagged: questions.filter((q) => q.flagged).length,
+    Incorrect: questions.filter((q) => q.status === "incorrect").length,
+    Correct: questions.filter((q) => q.status === "correct").length,
   };
 
   const filteredQuestions = questions.filter((q) => {
-    const matchesFilter =
-      activeFilter === "all"
-        ? true
-        : activeFilter === "flagged"
-          ? q.flagged
-          : activeFilter === "incorrect"
-            ? q.status === "incorrect"
-            : activeFilter === "correct"
-              ? q.status === "correct"
-              : true;
-
+    const s = searchQuery.toLowerCase();
     const matchesSearch =
-      q.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.category.toLowerCase().includes(searchQuery.toLowerCase());
-
-    return matchesFilter && matchesSearch;
+      !searchQuery ||
+      q.question.toLowerCase().includes(s) ||
+      q.category.toLowerCase().includes(s);
+    if (!matchesSearch) return false;
+    if (activeFilter === "All") return true;
+    if (activeFilter === "Flagged") return q.flagged;
+    if (activeFilter === "Incorrect") return q.status === "incorrect";
+    if (activeFilter === "Correct") return q.status === "correct";
+    return true;
   });
-
-  const totalPages = Math.ceil(filteredQuestions.length / questionsPerPage);
-  const startIndex = (currentPage - 1) * questionsPerPage;
-  const paginatedQuestions = filteredQuestions.slice(
-    startIndex,
-    startIndex + questionsPerPage
-  );
 
   const toggleFlag = (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -451,176 +439,116 @@ export function ReviewTabClient({ slug, meta }: ReviewTabClientProps) {
   };
 
   return (
-    <div
-      className={`min-h-screen bg-background ${totalPages > 1 ? "pb-28 md:pb-24" : "pb-24"}`}
-    >
-      <ExamTabToolbar
-        filterPills={[
-          { value: "all", label: "All", count: counts.all },
-          { value: "flagged", label: "Flagged", count: counts.flagged },
-          { value: "incorrect", label: "Incorrect", count: counts.incorrect },
-          { value: "correct", label: "Correct", count: counts.correct },
-        ]}
-        activeFilter={activeFilter}
-        onFilterChange={(v) => {
-          setActiveFilter(v);
-          setCurrentPage(1);
-        }}
-        searchPlaceholder="Search questions..."
-        searchValue={searchQuery}
-        onSearchChange={(v) => {
-          setSearchQuery(v);
-          setCurrentPage(1);
-        }}
+    <div className="min-h-screen bg-background pb-28 md:pb-24">
+      <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap"
+        rel="stylesheet"
       />
 
-      {/* Questions List - mobile-optimized spacing and typography */}
-      <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        <div className="space-y-3 sm:space-y-4">
-          {paginatedQuestions.map((q) => (
-            <Card
-              key={q.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => openQuestion(q)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  openQuestion(q);
-                }
-              }}
-              className="rounded-2xl border border-warm-200 bg-white shadow-sm overflow-hidden cursor-pointer transition-colors hover:border-gray-400 hover:shadow-md active:bg-warm-50 py-3 min-h-[44px]"
+      <div className="max-w-[720px] mx-auto px-5 py-8 pb-16" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        {/* Filters + Search */}
+        <div className="flex flex-wrap items-center gap-1.5 mb-5">
+          {FILTERS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setActiveFilter(f)}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border-none text-[13px] font-medium cursor-pointer transition-all duration-150 ${
+                activeFilter === f
+                  ? "bg-neutral-900 text-white"
+                  : "bg-[#F3F3F3] text-[#888] hover:bg-[#E8E8E8] hover:text-[#555]"
+              }`}
             >
-              <CardHeader className="pb-2 pt-3 px-3 sm:px-4">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-warm-100 text-warm-700 border border-warm-200/80">
+              {f}
+              <span className={activeFilter === f ? "opacity-60" : "opacity-50 text-[11px] font-semibold"}>
+                {counts[f]}
+              </span>
+            </button>
+          ))}
+          <div className="relative ml-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-[#BBB] pointer-events-none" strokeWidth={2.5} />
+            <input
+              type="text"
+              placeholder="Search questions..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[220px] pl-9 pr-3 py-2 rounded-lg border border-[#E5E5E5] bg-white text-[13px] text-[#1A1A1A] outline-none transition-[border-color] focus:border-[#999] placeholder:text-[#BBB]"
+            />
+          </div>
+        </div>
+
+        {/* Question cards */}
+        <div className="flex flex-col gap-2.5">
+          {filteredQuestions.length === 0 && (
+            <div className="text-center py-16 text-[13px] text-[#BBB]">
+              No questions found
+            </div>
+          )}
+
+          {filteredQuestions.map((q, i) => {
+            const isCorrect = q.status === "correct";
+            return (
+              <div
+                key={q.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => openQuestion(q)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openQuestion(q);
+                  }
+                }}
+                className="bg-white border border-[#D8DEE4] rounded-xl px-5 py-4.5 transition-[border-color,box-shadow] hover:border-[#B8C0CA] hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-200"
+                style={{ animationDelay: `${i * 30}ms` }}
+              >
+                <div className="flex items-start justify-between gap-3 mb-2.5">
+                  <span className="text-[13.5px] font-normal text-[#5A7080] leading-snug">
                     {q.category}
                   </span>
-                  <button
-                    onClick={(e) => toggleFlag(q.id, e)}
-                    className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 p-1.5 rounded-lg transition-colors shrink-0 flex items-center justify-center -mr-1 ${
-                      q.flagged ? "text-amber-500 bg-amber-50" : "text-warm-400 hover:text-warm-600 hover:bg-warm-100"
-                    }`}
-                    aria-label={q.flagged ? "Unpin question" : "Pin question"}
-                  >
-                    <svg className="w-5 h-5" fill={q.flagged ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => toggleFlag(q.id, e)}
+                      title="Flag question"
+                      className={`w-7 h-7 rounded-md border-none bg-transparent cursor-pointer flex items-center justify-center transition-all duration-150 ${
+                        q.flagged
+                          ? "text-[#4A7C9B] bg-[#EDF3F8]"
+                          : "text-[#C0C8D0] hover:text-[#8A9AAA] hover:bg-[#F0F2F5]"
+                      }`}
+                      aria-label={q.flagged ? "Unflag question" : "Flag question"}
+                    >
+                      <svg className="w-[15px] h-[15px]" viewBox="0 0 24 24" fill={q.flagged ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2}>
+                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                        <circle cx="12" cy="10" r="2" fill={q.flagged ? "#fff" : "none"} />
+                        <path d="M12 14v2" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                    {isCorrect ? (
+                      <svg className="w-5 h-5 text-[#3BA55D]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-[#D94040]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    )}
+                  </div>
                 </div>
-                <p className="text-warm-900 font-semibold leading-snug sm:leading-relaxed pt-2 sm:pt-2.5 text-sm sm:text-[15px]">
+                <p className="text-[15.5px] leading-relaxed text-[#1A2530] font-normal">
                   {q.question}
                 </p>
-              </CardHeader>
-            </Card>
-          ))}
+              </div>
+            );
+          })}
         </div>
-
-        {filteredQuestions.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-warm-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-8 h-8 text-warm-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-            </div>
-            <p className="text-warm-500">No questions match this filter</p>
-          </div>
-        )}
       </div>
 
-      {/* Fixed Pagination - sits above tab bar on mobile, touch-friendly tap targets */}
-      {totalPages > 1 && (
-        <div className="fixed left-0 right-0 bg-white border-t border-warm-200 shadow-lg bottom-0">
-          <div className="max-w-3xl mx-auto px-4 py-3 sm:py-4">
-            <div className="flex items-center justify-between gap-2">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className={`flex items-center gap-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                  currentPage === 1
-                    ? "text-warm-300 cursor-not-allowed"
-                    : "text-warm-700 hover:bg-warm-100 active:bg-warm-200"
-                }`}
-              >
-                <svg
-                  className="w-5 h-5 shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-                <span className="hidden sm:inline">Previous</span>
-              </button>
-
-              <div className="flex items-center gap-1.5 sm:gap-1 overflow-x-auto scrollbar-hide justify-center min-w-0 flex-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`min-w-[44px] min-h-[44px] sm:min-w-10 sm:min-h-10 w-10 h-10 rounded-full font-medium text-sm transition-colors shrink-0 flex items-center justify-center ${
-                        currentPage === page
-                          ? "bg-neutral-800 text-white"
-                          : "text-warm-600 hover:bg-warm-100 active:bg-warm-200"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                )}
-              </div>
-
-              <button
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
-                }
-                disabled={currentPage === totalPages}
-                className={`flex items-center gap-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                  currentPage === totalPages
-                    ? "text-warm-300 cursor-not-allowed"
-                    : "text-warm-700 hover:bg-warm-100 active:bg-warm-200"
-                }`}
-              >
-                <span className="hidden sm:inline">Next</span>
-                <svg
-                  className="w-5 h-5 shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Full-screen question modal — redesigned detail view */}
+      {/* Full-screen question modal — above app header so Upgrade/Sign in/Sign up are hidden */}
       {currentQuestion && (
         <div
-          className="fixed inset-0 z-50 flex flex-col bg-background"
+          className="fixed inset-0 z-[200] flex flex-col bg-background"
           role="dialog"
           aria-modal="true"
         >
@@ -785,31 +713,41 @@ export function ReviewTabClient({ slug, meta }: ReviewTabClientProps) {
             />
           )}
 
-          {/* Footer — Prev/Next only (modal is full-screen, no tab bar visible) */}
-          <footer className="fixed bottom-0 left-0 right-0 bg-card border-t border-border py-3 px-4 sm:px-6 flex items-center justify-between z-10 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] pb-[env(safe-area-inset-bottom)]">
+          {/* Footer — Prev / Question counter / Next — full-width bar */}
+          <footer
+            className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-between gap-4 rounded-t-2xl border border-b-0 border-warm-200 bg-card px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] sm:px-6 sm:py-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+          >
             <button
               type="button"
               onClick={() => goPrev()}
               disabled={selectedIndex === 0}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-warm-600 hover:bg-warm-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-xl border border-warm-200 bg-white px-4 py-2.5 text-sm font-semibold text-warm-800 shadow-sm transition-colors hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-warm-200 sm:min-h-0 sm:min-w-0"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
-              Prev
+              <span className="hidden sm:inline">Previous</span>
             </button>
-            <span className="text-sm text-warm-500">
-              {selectedIndex! + 1} of {filteredQuestions.length}
-            </span>
+
+            <div className="flex flex-1 flex-col items-center justify-center gap-0.5 sm:flex-row sm:gap-2">
+              <span className="text-xs font-medium uppercase tracking-wider text-warm-500">
+                Question
+              </span>
+              <span className="text-base font-bold tabular-nums text-warm-900 sm:text-lg">
+                {selectedIndex! + 1}
+                <span className="font-normal text-warm-500"> / {filteredQuestions.length}</span>
+              </span>
+            </div>
+
             <button
               type="button"
               onClick={() => goNext()}
               disabled={selectedIndex === filteredQuestions.length - 1}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-warm-600 hover:bg-warm-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-xl border border-warm-200 bg-white px-4 py-2.5 text-sm font-semibold text-warm-800 shadow-sm transition-colors hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-warm-200 sm:min-h-0 sm:min-w-0"
             >
-              Next
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <span className="hidden sm:inline">Next</span>
+              <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </footer>

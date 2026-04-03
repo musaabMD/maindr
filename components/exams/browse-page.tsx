@@ -164,6 +164,7 @@ export function BrowsePage({ dark, setDark }: BrowsePageProps) {
               <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zm-5.242 1.406a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z" />
             </svg>
             <Input
+              id="exams-search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search exams..."

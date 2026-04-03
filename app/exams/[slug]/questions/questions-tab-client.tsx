@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useSidebar } from "@/components/ui/sidebar";
 /* ─── data ─── */
 const QUESTIONS = [
   { id: 1, text: "A 58-year-old male presents with acute chest pain. ECG shows ST elevation in leads II, III, and aVF. Which coronary artery is most likely occluded?", options: ["Left anterior descending", "Right coronary artery", "Left circumflex", "Left main"], answer: 1, tag: "Cardiology" },
@@ -416,11 +417,15 @@ interface QuestionsTabClientProps {
 }
 
 export function QuestionsTabClient({ slug, meta }: QuestionsTabClientProps) {
+  const { isMobile, state } = useSidebar();
   const [page, setPage] = useState(1);
   const [bookmarks, setBookmarks] = useState<Set<number>>(new Set());
   const total = Math.ceil(QUESTIONS.length / PER_PAGE);
   const start = (page - 1) * PER_PAGE;
   const slice = QUESTIONS.slice(start, start + PER_PAGE);
+
+  // Bar sits in main content only; don't overlap sidebar (0 on mobile, sidebar width on desktop)
+  const barLeft = isMobile ? 0 : state === "collapsed" ? "4rem" : "16rem";
 
   const go = (p: number) => {
     setPage(p);
@@ -466,7 +471,7 @@ export function QuestionsTabClient({ slug, meta }: QuestionsTabClientProps) {
         style={{
           position: "fixed",
           bottom: 0,
-          left: 0,
+          left: barLeft,
           right: 0,
           background: "rgba(255,255,255,0.92)",
           backdropFilter: "blur(12px)",

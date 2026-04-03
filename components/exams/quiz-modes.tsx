@@ -79,12 +79,12 @@ const icons = {
 };
 
 const modes = [
-  { id: "timed", name: "Timed Quiz", desc: "Race against the clock to test your speed and accuracy", icon: "timer" as const, color: "#3B82F6", bg: "#EFF6FF", premium: false, modalId: "timed" as const },
-  { id: "weakest", name: "Weakest Subject", desc: "Focus on areas where you need the most improvement", icon: "book" as const, color: "#F59E0B", bg: "#FFFBEB", premium: true, modalId: "weakest-subject" as const },
-  { id: "missed", name: "Missed Questions", desc: "Revisit questions you've previously answered incorrectly", icon: "xCircle" as const, color: "#EF4444", bg: "#FEF2F2", premium: true, modalId: "missed-questions" as const },
-  { id: "custom", name: "Build Your Own", desc: "Customize question count, subjects, and difficulty", icon: "pen" as const, color: "#8B5CF6", bg: "#F5F3FF", premium: true, modalId: "build-your-own" as const },
-  { id: "questions", name: "All Questions", desc: "Practice with the full question bank at your own pace", icon: "listChecks" as const, color: "#10B981", bg: "#ECFDF5", premium: false, modalId: "questions" as const },
-  { id: "predictor", name: "Score Predictor", desc: "Simulate exam conditions and predict your real score", icon: "barChart" as const, color: "#EC4899", bg: "#FDF2F8", premium: true, modalId: "score-predictor" as const },
+  { id: "timed", name: "Timed Quiz", desc: "Race against the clock to test your speed and accuracy", icon: "timer" as const, color: "#2563EB", bg: "#EFF6FF", premium: false, modalId: "timed" as const },
+  { id: "weakest", name: "Weakest Subject", desc: "Focus on areas where you need the most improvement", icon: "book" as const, color: "#EA580C", bg: "#FFF7ED", premium: true, modalId: "weakest-subject" as const },
+  { id: "missed", name: "Missed Questions", desc: "Revisit questions you've previously answered incorrectly", icon: "xCircle" as const, color: "#DC2626", bg: "#FEF2F2", premium: true, modalId: "missed-questions" as const },
+  { id: "custom", name: "Build Your Own", desc: "Customize question count, subjects, and difficulty", icon: "pen" as const, color: "#7C3AED", bg: "#F5F3FF", premium: true, modalId: "build-your-own" as const },
+  { id: "questions", name: "All Questions", desc: "Practice with the full question bank at your own pace", icon: "listChecks" as const, color: "#059669", bg: "#ECFDF5", premium: false, modalId: "questions" as const },
+  { id: "predictor", name: "Score Predictor", desc: "Simulate exam conditions and predict your real score", icon: "barChart" as const, color: "#DB2777", bg: "#FDF2F8", premium: true, modalId: "score-predictor" as const },
 ];
 
 type QuizModeId = "timed" | "weakest-subject" | "missed-questions" | "build-your-own" | "questions" | "score-predictor" | "settings";
@@ -112,7 +112,7 @@ function ModalOverlay({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/35 p-4 backdrop-blur-[2px]"
       aria-modal="true"
     >
       <div
@@ -140,7 +140,7 @@ function TimedQuizModal({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-              {icons.timer("#3B82F6", 20)}
+              {icons.timer("#2563EB", 20)}
             </div>
             <h2 className="text-lg font-semibold">Timed Quiz</h2>
           </div>
@@ -170,7 +170,7 @@ function TimedQuizModal({
             max={100}
             value={minutes}
             onChange={(e) => setMinutes(Number(e.target.value))}
-            className="flex-1 h-2 rounded-full appearance-none bg-muted accent-primary"
+            className="flex-1 h-2 rounded-full appearance-none bg-muted accent-blue-600"
           />
           <span className="text-sm text-muted-foreground w-8">{minutes}</span>
         </div>
@@ -200,8 +200,8 @@ function WeakestSubjectModal({
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-              {icons.book("#F59E0B", 20)}
+            <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+              {icons.book("#EA580C", 20)}
             </div>
             <h2 className="text-lg font-semibold">Weakest Subjects Quiz</h2>
           </div>
@@ -507,8 +507,8 @@ function QuestionsModal({
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-              {icons.listChecks("#10B981", 20)}
+            <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+              {icons.listChecks("#059669", 20)}
             </div>
             <h2 className="text-lg font-semibold">Questions</h2>
           </div>
@@ -550,8 +550,8 @@ function ScorePredictorModal({
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-              {icons.barChart("#EC4899", 20)}
+            <div className="p-2 rounded-lg bg-pink-100 dark:bg-pink-900/30">
+              {icons.barChart("#DB2777", 20)}
             </div>
             <h2 className="text-lg font-semibold">Score Predictor</h2>
           </div>
@@ -682,9 +682,9 @@ export function QuizModes({ slug, meta }: QuizModesProps) {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
-            <div className="flex items-center gap-2.5 mb-1">
-              {icons.zap("#B45309")}
-              <span className="font-mono text-[11px] font-bold tracking-widest uppercase text-amber-700 dark:text-amber-400">
+            <div className="mb-1 flex items-center gap-2.5 text-primary">
+              {icons.zap("currentColor")}
+              <span className="font-mono text-[11px] font-bold tracking-widest uppercase">
                 Study Modes
               </span>
             </div>

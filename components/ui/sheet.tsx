@@ -28,7 +28,7 @@ function SheetOverlay({ className, ...props }: SheetPrimitive.Backdrop.Props) {
     <SheetPrimitive.Backdrop
       data-slot="sheet-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/10 duration-100 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 z-50 bg-black/10 duration-100 data-ending-style:opacity-0 data-starting-style:opacity-0 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
       )}
       {...props}
@@ -41,14 +41,31 @@ function SheetContent({
   children,
   side = "right",
   showCloseButton = true,
+  overlayClassName,
+  onOverlayClick,
   ...props
 }: SheetPrimitive.Popup.Props & {
   side?: "top" | "right" | "bottom" | "left"
   showCloseButton?: boolean
+  /** Merged onto the backdrop (e.g. z-index when the sheet must sit above a sticky header). */
+  overlayClassName?: string
+  /**
+   * Called when the user clicks the backdrop itself (not bubbled from children).
+   * Use with `Sheet` `disablePointerDismissal` so in-dialog taps do not close via focus-out,
+   * while the dimmed area can still dismiss.
+   */
+  onOverlayClick?: (event: React.MouseEvent<HTMLDivElement>) => void
 }) {
   return (
     <SheetPortal>
-      <SheetOverlay />
+      <SheetOverlay
+        className={overlayClassName}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            onOverlayClick?.(event)
+          }
+        }}
+      />
       <SheetPrimitive.Popup
         data-slot="sheet-content"
         data-side={side}

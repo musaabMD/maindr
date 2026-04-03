@@ -11,7 +11,6 @@ import {
   ClipboardList,
   RotateCcw,
   Command,
-  Sparkles,
 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { NavUser } from "@/components/nav-user";
@@ -24,6 +23,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 const examNavItems = [
   { title: "Home", url: "", icon: Home },
@@ -78,7 +78,7 @@ export function ExamAppSidebar({
           <div className="flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70">
             Navigate
           </div>
-          <ul data-slot="sidebar-menu" data-sidebar="menu" className="flex w-full min-w-0 flex-col gap-0">
+          <ul data-slot="sidebar-menu" data-sidebar="menu" className="flex w-full min-w-0 flex-col gap-1">
             {examNavItems.map((item) => {
               const href = item.url ? `${basePath}/${item.url}` : basePath;
               const isActive =
@@ -90,6 +90,12 @@ export function ExamAppSidebar({
                   <SidebarMenuButton
                     tooltip={item.title}
                     isActive={isActive}
+                    className={cn(
+                      "rounded-lg",
+                      /* Chatbase-style: white pill + hairline on gray rail */
+                      isActive &&
+                        "!bg-white !text-zinc-900 shadow-[0_0_0_1px_rgba(24,24,27,0.08)] hover:!bg-white dark:!bg-zinc-800 dark:!text-zinc-50 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1)] dark:hover:!bg-zinc-800"
+                    )}
                     render={
                       <Link href={href}>
                         <Icon className="size-4" />
@@ -101,21 +107,6 @@ export function ExamAppSidebar({
               );
             })}
           </ul>
-        </div>
-        <div data-slot="sidebar-group" data-sidebar="group" className="relative flex w-full min-w-0 flex-col p-2 mt-auto">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                size="sm"
-                render={
-                  <Link href="/upgrade">
-                    <Sparkles className="size-4" />
-                    <span>Upgrade to Pro</span>
-                  </Link>
-                }
-              />
-            </SidebarMenuItem>
-          </SidebarMenu>
         </div>
       </SidebarContent>
       <SidebarFooter>

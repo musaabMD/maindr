@@ -10,6 +10,7 @@ import { api } from "@/convex/_generated/api";
 import { getExamMeta } from "@/lib/exam-seo";
 import { ExamLayoutProvider, useExamLayout } from "@/components/exams/exam-layout-context";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 const PAGE_TITLES: Record<string, string> = {
   questions: "Practice Questions",
@@ -39,32 +40,33 @@ function ExamLayoutInner({ children }: { children: React.ReactNode }) {
   const pageTitle = useMemo(() => getPageTitle(pathname), [pathname]);
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className={cn(!dark && "exam-inset-shell")}>
       <ExamAppSidebar slug={slug} examName={examName} />
       <SidebarInset>
         <div
           className={`flex flex-col h-[100dvh] md:h-screen overflow-hidden transition-colors duration-300 ${dark ? "dark" : ""}`}
           style={{
+            /* Light: white main column + header (Chatbase-style); dark: theme canvas */
             background: dark ? t.bg : "#ffffff",
             color: t.text,
             fontFamily: "var(--font-bricolage)",
           }}
         >
-          <ExamHeader
-            dark={dark}
-            setDark={setDark}
-            examSlug={slug}
-            examName={examName}
-            pageTitle={pageTitle}
-            sidebarOpen={true}
-            onSidebarOpenChange={() => {}}
-            useShadcnSidebar
-          />
           <div
             className="flex-1 min-h-0 overflow-auto"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
-            {children}
+            <ExamHeader
+              dark={dark}
+              setDark={setDark}
+              examSlug={slug}
+              examName={examName}
+              pageTitle={pageTitle}
+              sidebarOpen={true}
+              onSidebarOpenChange={() => {}}
+              useShadcnSidebar
+            />
+            <div className="pt-[var(--header-height)]">{children}</div>
           </div>
         </div>
       </SidebarInset>

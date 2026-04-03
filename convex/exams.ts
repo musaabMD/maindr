@@ -1,86 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-
-const EXAMS = [
-  {
-    name: "SMLE",
-    slug: "smle",
-    questions: 200,
-    color: "#3f3f46",
-    subjects: ["Medicine", "Clinical Sciences", "Basic Sciences"],
-    tags: ["medical", "licensing"],
-    description:
-      "Saudi Medical License Examination for medical practice licensing.",
-    passRate: 65,
-    duration: "4h",
-    difficulty: "Hard",
-  },
-  {
-    name: "SDLE",
-    slug: "sdle",
-    questions: 200,
-    color: "#1e5a8e",
-    subjects: ["Dental Sciences", "Clinical Dentistry", "Basic Sciences"],
-    tags: ["dental", "licensing"],
-    description:
-      "Saudi Dental License Examination for dental practice licensing.",
-    passRate: 62,
-    duration: "4h",
-    difficulty: "Hard",
-  },
-  {
-    name: "SPLE",
-    slug: "sple",
-    questions: 200,
-    color: "#7d3cca",
-    subjects: ["Pharmacy", "Clinical Pharmacy", "Pharmaceutical Sciences"],
-    tags: ["pharmacy", "licensing"],
-    description:
-      "Saudi Pharmacy License Examination for pharmacy practice licensing.",
-    passRate: 60,
-    duration: "4h",
-    difficulty: "Hard",
-  },
-  {
-    name: "SNLE",
-    slug: "snle",
-    questions: 200,
-    color: "#e8114b",
-    subjects: ["Nursing", "Clinical Nursing", "Patient Care"],
-    tags: ["nursing", "licensing"],
-    description:
-      "Saudi Nursing License Examination for nursing practice licensing.",
-    passRate: 68,
-    duration: "4h",
-    difficulty: "Medium",
-  },
-  {
-    name: "Family Medicine",
-    slug: "family-medicine",
-    questions: 250,
-    color: "#0d9488",
-    subjects: ["Family Medicine", "Primary Care", "Preventive Medicine"],
-    tags: ["medical", "family medicine", "specialty"],
-    description:
-      "Family Medicine specialty examination for board certification.",
-    passRate: 58,
-    duration: "5h",
-    difficulty: "Hard",
-  },
-  {
-    name: "SLLE",
-    slug: "slle",
-    questions: 200,
-    color: "#1f3264",
-    subjects: ["Law", "Legal Practice", "Regulations"],
-    tags: ["law", "licensing"],
-    description:
-      "Saudi Law License Examination for legal practice licensing.",
-    passRate: 55,
-    duration: "4h",
-    difficulty: "Hard",
-  },
-];
+import { EXAMS } from "./examsCatalog";
 
 /** List all exams */
 export const list = query({
@@ -113,5 +33,46 @@ export const seed = mutation({
       await ctx.db.insert("exams", exam);
     }
     return { message: "Seeded exams", count: EXAMS.length };
+  },
+});
+
+/** Admin: create a minimal exam row (expand in dashboard later) */
+export const create = mutation({
+  args: {
+    name: v.string(),
+    slug: v.optional(v.string()),
+  },
+  handler: async (ctx, { name, slug }) => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      throw new Error("Name required");
+    }
+    const base =
+      slug?.trim() ||
+      trimmed
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+    const finalSlug = base || `exam-${Date.now()}`;
+    const dup = await ctx.db
+      .query("exams")
+      .withIndex("by_slug", (q) => q.eq("slug", finalSlug))
+      .unique();
+    if (dup) {
+      throw new Error(`Slug already exists: ${finalSlug}`);
+    }
+    await ctx.db.insert("exams", {
+      name: trimmed,
+      slug: finalSlug,
+      questions: 0,
+      color: "#64748b",
+      subjects: [],
+      tags: [],
+      description: "",
+      passRate: 0,
+      duration: "—",
+      difficulty: "—",
+    });
+    return finalSlug;
   },
 });

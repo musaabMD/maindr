@@ -87,11 +87,13 @@ const MOCK_STUDY_SETS: StudySet[] = [
   },
 ];
 
+/** Score bands: red = needs focus, amber = borderline, green = solid */
 const scoreColor = (s: number) => {
-  if (s === 0) return "#D1D5DB";
-  if (s < 60) return "#F87171";
-  if (s < 75) return "#FBBF24";
-  return "#34D399";
+  if (s === 0) return "#cbd5e1";
+  if (s < 50) return "#e11d48";
+  if (s < 70) return "#d97706";
+  if (s < 85) return "#059669";
+  return "#047857";
 };
 
 function PinIcon({ filled }: { filled: boolean }) {
@@ -136,7 +138,7 @@ function StartModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 50,
+        zIndex: 200,
         backdropFilter: "blur(3px)",
       }}
     >
@@ -285,10 +287,10 @@ function StartModal({
               padding: "11px 0",
               borderRadius: 9,
               border: "none",
-              background: "#111827",
+              background: "var(--primary)",
               fontSize: 13.5,
               fontWeight: 600,
-              color: "#fff",
+              color: "var(--primary-foreground)",
               cursor: "pointer",
               fontFamily: "inherit",
             }}
@@ -332,7 +334,7 @@ function StudyCard({
         hovered ? "bg-gray-50" : "bg-white"
       }`}
     >
-      <span className="shrink-0 w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-[11px] sm:text-xs font-bold text-white bg-blue-600 rounded">
+      <span className="shrink-0 w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-primary text-[11px] font-bold text-primary-foreground sm:text-xs">
         {index + 1}
       </span>
       <div className="flex-1 min-w-0">

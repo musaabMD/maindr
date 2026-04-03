@@ -1,6 +1,21 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
-export default clerkMiddleware();
+const isControlCenterRoute = createRouteMatcher(["/control-center(.*)"]);
+
+export default clerkMiddleware(async (auth, req) => {
+  if (!isControlCenterRoute(req)) {
+    return NextResponse.next();
+  }
+
+  const { userId } = await auth();
+
+  if (!userId) {
+    return new NextResponse("Not Found", { status: 404 });
+  }
+
+  return NextResponse.next();
+});
 
 export const config = {
   matcher: [

@@ -31,4 +31,25 @@ export default defineSchema({
     description: v.optional(v.string()),
     submittedBy: v.optional(v.string()), // Clerk user ID if signed in
   }),
+
+  /** Control-center kanban tasks (admin dashboard) */
+  adminTasks: defineTable({
+    title: v.string(),
+    stage: v.string(),
+    priority: v.string(),
+    type: v.string(),
+    createdAt: v.number(),
+  }),
+
+  /** Control-center upload queue records (metadata only) */
+  adminUploads: defineTable({
+    examSlug: v.string(),
+    examTitle: v.string(),
+    source: v.string(),
+    name: v.string(),
+    size: v.optional(v.number()),
+    textPreview: v.optional(v.string()),
+    isDuplicate: v.boolean(),
+    createdAt: v.number(),
+  }),
 });
