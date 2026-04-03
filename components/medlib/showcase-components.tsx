@@ -467,7 +467,7 @@ export function TestBuilderShowcase() {
             Mode
           </p>
           <div style={{ display: "flex", gap: 8 }}>
-            {["timed", "tutor", "untimed"].map((m) => (
+            {(["timed", "tutor", "untimed"] as const).map((m) => (
               <button
                 key={m}
                 type="button"

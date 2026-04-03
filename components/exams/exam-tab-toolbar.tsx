@@ -99,7 +99,7 @@ export function ExamTabToolbar({
               type="text"
               placeholder={searchPlaceholder}
               value={searchValue}
-              onChange={(e) => onSearchChange(e.target.value)}
+              onChange={(e) => onSearchChange?.(e.target.value)}
               className="w-full pl-8 sm:pl-9 pr-3 min-h-[44px] sm:min-h-0 h-9 sm:h-9 rounded-full border-2 border-warm-300 bg-card focus-visible:border-warm-500 focus-visible:ring-warm-500/20 text-warm-900 placeholder:text-warm-400 text-sm"
             />
           </div>
